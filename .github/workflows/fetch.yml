@@ -1,0 +1,36 @@
+name: fetch-vm
+on:
+  workflow_dispatch:
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download VM bundle
+        run: |
+          set -eux
+          SHA=882518393ed4ce89020bd48d99d5daf114999773
+          BASE="https://downloads.claude.ai/vms/linux/x64/${SHA}"
+          mkdir -p out
+          curl -fL --retry 5 --retry-all-errors -o out/rootfs.img.zst     "${BASE}/rootfs.img.zst"
+          curl -fL --retry 5 --retry-all-errors -o out/vmlinuz.zst       "${BASE}/vmlinuz.zst"
+          curl -fL --retry 5 --retry-all-errors -o out/initrd.zst        "${BASE}/initrd.zst"
+          curl -fL --retry 5 --retry-all-errors -o out/initrd-micro.zst  "${BASE}/initrd-micro.zst"
+          curl -fL --retry 5 --retry-all-errors -o out/linux-claude.zst  "https://downloads.claude.ai/claude-code-releases/2.1.299/linux-x64/claude.zst"
+      - name: Verify sha256
+        run: |
+          cd out
+          sha256sum -c <<'EOF'
+          1c3e856d002d52df2246446ce0e3ae21fb65fdd81451f29a8e908305697a52c0  rootfs.img.zst
+          05ea41656679873c674d5637fcf51e31ddfa47e15d85f0ecdc6a1976e666e82a  vmlinuz.zst
+          820b31caaeed2c1090ecb5297d99ed11a93bc08fe88b0870528cb833a6c3b297  initrd.zst
+          659bfdc7e6053450b90ee8df18310be7abe5b836d06feb21991b8f418c6e8adc  initrd-micro.zst
+          EOF
+          ls -lh
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create vm-bundle --title "vm-bundle" --notes "auto-fetched" \
+            out/rootfs.img.zst out/vmlinuz.zst out/initrd.zst out/initrd-micro.zst out/linux-claude.zst
