@@ -1,0 +1,29 @@
+name: check-update
+on:
+  workflow_dispatch:
+jobs:
+  chk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe Squirrel update feed
+        run: |
+          set -x
+          for HOST in api.anthropic.com releases.claude.com; do
+            for ARCH in x64 universal arm64; do
+              U="https://${HOST}/api/desktop/darwin/${ARCH}/squirrel/update?device_id=11111111-2222-3333-4444-555555555555&version=2.42304.0&os_version=24.6.0"
+              echo "########## $U"
+              curl -sS -m 25 -w "\n[HTTP %{http_code}]\n" "$U" | head -c 1200
+              echo; echo
+            done
+          done
+      - name: With Claude user-agent
+        run: |
+          U="https://api.anthropic.com/api/desktop/darwin/x64/squirrel/update?device_id=11111111-2222-3333-4444-555555555555&version=2.42304.0&os_version=24.6.0"
+          curl -sS -m 25 -A "Claude/2.42304.0 (Macintosh; Intel Mac OS X 24.6.0)" -w "\n[HTTP %{http_code}]\n" "$U" | head -c 1500
+          echo
+      - name: Probe release download host
+        run: |
+          for P in "/releases/" "/releases/universal/" "/api/desktop/darwin/x64/squirrel/update"; do
+            curl -sS -m 20 -o /dev/null -w "downloads.claude.ai$P -> %{http_code}\n" "https://downloads.claude.ai$P" || true
+          done
+          curl -sSI -m 20 "https://claude.ai/download" | head -6 || true
