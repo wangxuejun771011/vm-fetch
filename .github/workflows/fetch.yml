@@ -23,9 +23,9 @@ jobs:
           cd out
           sha256sum -c <<'EOF'
           1c3e856d002d52df2246446ce0e3ae21fb65fdd81451f29a8e908305697a52c0  rootfs.img.zst
-          05ea41656679873c674d5637fcf51e31ddfa47e15d85f0ecdc6a1976e666e82a  vmlinuz.zst
-          820b31caaeed2c1090ecb5297d99ed11a93bc08fe88b0870528cb833a6c3b297  initrd.zst
-          659bfdc7e6053450b90ee8df18310be7abe5b836d06feb21991b8f418c6e8adc  initrd-micro.zst
+          3118616ef6ba3866652284b8b4c224a96876c56091724c35c93caf1ccb9b50a9  vmlinuz.zst
+          c12df253f5ddac9f7f7cdf317c7257586d262eabd9336c1ce001301399fbe56a  initrd.zst
+          e8a5fa87ae465403ae5e8261e64c952527eb411828759d421086e14f05858531  initrd-micro.zst
           EOF
           ls -lh
       - name: Publish release
