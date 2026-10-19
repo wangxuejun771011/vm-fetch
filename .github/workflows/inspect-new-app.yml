@@ -1,0 +1,33 @@
+name: inspect-new-app
+on:
+  workflow_dispatch:
+jobs:
+  insp:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download & fingerprint new build
+        run: |
+          set -eux
+          URL="https://downloads.claude.ai/releases/darwin/x64/2.42304.2/Claude-af65c0e384c1657459441aac3083c6e622789afe.zip"
+          SHA="382a2d2f6a4787c21f3f4d930046bc8f72d240248d7b75bee4fc6d2f5b4fc14e"
+          curl -fL --retry 3 -o app.zip "$URL"
+          echo "$SHA  app.zip" | sha256sum -c -
+          mkdir -p x && unzip -q app.zip -d x
+          ASAR=$(find x -name app.asar | head -1)
+          echo "asar=$ASAR size=$(stat -c%s "$ASAR")"
+          PS=$(find x -name Info.plist -maxdepth 3 | head -1)
+          echo "--- Info.plist 版本 ---"; /usr/bin/plutil -p "$PS" 2>/dev/null | grep -i version || true
+          echo "=== VM 镜像指纹 ==="
+          echo -n "VM manifest sha (旧=882518393ed4ce89020bd48d99d5daf114999773 命中数): "
+          grep -ac '882518393ed4ce89020bd48d99d5daf114999773' "$ASAR" || true
+          echo -n "x64 rootfs.zst 校验和命中数: "; grep -ac '1c3e856d002d52df2246446ce0e3ae21fb65fdd81451f29a8e908305697a52c0' "$ASAR" || true
+          echo -n "x64 vmlinuz.zst 校验和命中数: "; grep -ac '3118616ef6ba3866652284b8b4c224a96876c56091724c35c93caf1ccb9b50a9' "$ASAR" || true
+          echo "--- 抓取 VM manifest sha 原文 ---"
+          grep -aoE '\{version:"[0-9a-f]{40}",files:\{unix' "$ASAR" | head -3 || true
+          grep -aoE 'sha:"[0-9a-f]{40}",files:\{unix:\{arm64' "$ASAR" | head -3 || true
+          echo "--- VM 下载基址附近的 sha ---"
+          grep -aoE '.{80}downloads\.claude\.ai/vms/linux/\$\{HZr\(\)\}/\$\{MU\.sha\}' "$ASAR" | head -2 || true
+          echo "=== Claude Code 固定版本 ==="
+          grep -aoE '"version":"2\.[0-9]+\.[0-9]+","manifest"' "$ASAR" | sort -u | head -5 || true
+          echo "=== app 版本 ==="
+          grep -aoE '"appVersion":"[0-9.]+"' "$ASAR" | sort -u | head -3 || true
