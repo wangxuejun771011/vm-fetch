@@ -1,0 +1,24 @@
+name: publish-app
+on:
+  workflow_dispatch:
+jobs:
+  pub:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download, verify, publish release asset
+        run: |
+          set -eux
+          URL="https://downloads.claude.ai/releases/darwin/x64/2.42304.2/Claude-af65c0e384c1657459441aac3083c6e622789afe.zip"
+          SHA="382a2d2f6a4787c21f3f4d930046bc8f72d240248d7b75bee4fc6d2f5b4fc14e"
+          curl -fL --retry 3 -o Claude-2.42304.2-x64.zip "$URL"
+          echo "$SHA  Claude-2.42304.2-x64.zip" | sha256sum -c -
+          ls -l Claude-2.42304.2-x64.zip
+          gh release delete app-2.42304.2 -R "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
+          gh release create app-2.42304.2 -R "$GITHUB_REPOSITORY" \
+            --title "Claude Desktop 2.42304.2 (darwin x64)" \
+            --notes "sha256=$SHA" \
+            Claude-2.42304.2-x64.zip
+          echo "=== asset url ==="
+          gh release view app-2.42304.2 -R "$GITHUB_REPOSITORY" --json assets -q '.assets[].url'
