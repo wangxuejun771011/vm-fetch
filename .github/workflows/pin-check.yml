@@ -1,0 +1,24 @@
+name: pin-check
+on:
+  workflow_dispatch:
+jobs:
+  pin:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check claude-code pin in 2.42304.2
+        run: |
+          set -eux
+          URL="https://downloads.claude.ai/releases/darwin/x64/2.42304.2/Claude-af65c0e384c1657459441aac3083c6e622789afe.zip"
+          curl -fL --retry 3 -o app.zip "$URL"
+          unzip -q -o app.zip -d x
+          A=x/Claude.app/Contents/Resources/app.asar
+          echo "### linux-x64 claude.zst 校验和命中数 (旧=20ca2521…fa4):"
+          grep -ac '20ca25213130255bacdcae3ed5df3fc99e1d8e86cdf46e9188b7ff9c1b478fa4' "$A" || true
+          echo "### 字符串 2.1.299 命中数:"
+          grep -ac '2\.1\.299' "$A" || true
+          echo "### asar 里出现的 2.1.xxx 版本号:"
+          grep -aoE '2\.1\.[0-9]{2,3}' "$A" | sort -u | head -20 || true
+          echo "### linux-x64 附近原文:"
+          grep -aoE '.{0,90}linux-x64.{0,90}' "$A" | head -4 || true
+          echo "### checksum 附近原文:"
+          grep -aoE '.{0,70}checksum.{0,90}' "$A" | head -4 || true
